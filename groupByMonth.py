@@ -37,7 +37,7 @@ def toEvents(data:pd.DataFrame) -> np.ndarray:
     for idx, row in data.iterrows():
         start = row['Time']
         end = start + row['Duration']
-        draw = row['Duration'].seconds*row['Hot']/60
+        draw = row['Hot']/60
         events[idx] = Event(start, end, draw)
     return events
 
@@ -60,8 +60,7 @@ def groupTimeSeries(data:pd.DataFrame) -> pd.DataFrame:
     return data.groupby(['H', 'M', 'S']).draws.mean()
 
 if __name__ == '__main__':
-    # base_names = ['std-1br-dwh','std-2br-dwh','std-3br-dwh','std-4br-dwh','std-5br-dwh']
-    base_names = ['std-5br-dwh']
+    base_names = ['std-1br-dwh','std-2br-dwh','std-3br-dwh','std-4br-dwh','std-5br-dwh']
     month = 1
     for name in base_names:
         raw = loadData(f'data/{name}.csv')
@@ -71,8 +70,3 @@ if __name__ == '__main__':
         stacked = stackEvents(events)
         grouped = groupTimeSeries(stacked)
         grouped.to_csv(f'outputs/grouped-{name}-{month}.csv')
-        
-        group = loadData(f'outputs/grouped-{name}-{month}.csv')
-        plt.figure()
-        plt.plot(group.draws)
-        plt.savefig(f'outputs/{name}-{month}.png', bbox_inches='tight')
