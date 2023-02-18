@@ -29,28 +29,32 @@ def heatingEnergy(temp_2: float, temp_1: float, volumn: float) -> float:
     return c*m*(t2-t1)/JOULE_PER_WATT_HOUR
 
 if __name__ == '__main__':
-    base_names = ['std-1br-dwh','std-2br-dwh','std-3br-dwh','std-4br-dwh','std-5br-dwh']
-    month = 1
+    #base_names = ['std-1br-dwh','std-2br-dwh','std-3br-dwh','std-4br-dwh','std-5br-dwh']
+    base_names = ['std-1br-dwh']
     
-    print ('Total energy: ', heatingEnergy(120, 50, 60)) # base formula
-    print ('Total energy: ', 2.44*60*70) # Anne's equation for energy as a check
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
     
     for name in base_names:
-        group = loadData(f'outputs/grouped-{name}-{month}.csv')
-        group = group.assign(energy = lambda x: (heatingEnergy(120, 50, x['draws'])))
-        print(f'{name} energy: {group.energy.sum()}')
-        group.to_csv(f'outputs/energy-{name}-{month}.csv')
-        plt.figure()
-        plt.plot(group.energy, color=plt.cm.PuBuGn(1/1))
-        plt.xlabel('Time (seconds)')
-        plt.ylabel('Energy (wh)')
-        plt.savefig(f'outputs/energy-{name}-{month}.png', bbox_inches='tight')
+        raw = loadData(f'data/{name}.csv')
+        data = toTimeSeries(raw)
         
-    for name in base_names:
-        group = loadData(f'outputs/grouped-{name}-{month}.csv')
-        plt.figure()
-        plt.plot(group.draws, color=plt.cm.PuBuGn(1/1))
-        plt.xlabel('Time (seconds)')
-        plt.ylabel('Water (gallons)')
-        plt.savefig(f'outputs/{name}-{month}.svg', bbox_inches='tight')
-        plt.savefig(f'outputs/{name}-{month}.png', bbox_inches='tight')
+        cnt = 1
+        for idx, day in data.groupby(data.Time.dt.date):
+                print(idx)
+                events = toEvents(day)
+                stacked = stackEvents(events)
+                compressed = compressDraws(stacked)
+                h = stacked.timestamps.dt.hour*60*60
+                m = stacked.timestamps.dt.minute*60
+                s = stacked.timestamps.dt.second
+                x = h+m+s
+                x = x.values
+                y = stacked.draws.values
+                ax.plot(x,y,cnt, zdir='y')
+                
+                #compressed.to_csv(f'outputs/unique/{name}-{cnt}.csv')
+                cnt+=1
+                
+                if cnt == 20:
+                    plt.savefig(f'outputs/{name}-uniques.png', bbox_inches='tight')
