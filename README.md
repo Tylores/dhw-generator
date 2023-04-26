@@ -4,9 +4,8 @@ Based on the standard DHW sheets
 ## Setup
 
 ```
-pip install virtualenv
-virtualenv -p python3 .env
-source .env/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip install --upgrade pip
 pip install -r req*.txt
 ```

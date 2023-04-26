@@ -28,7 +28,10 @@ def toTimeSeries(data:pd.DataFrame) -> pd.DataFrame:
     data['Time'] = pd.to_datetime(data['Time'],format=TIME_FORMAT)
     data['Duration'] = pd.to_timedelta(data['Duration'], unit='s')
     return data
-        
+
+def perMinute(data:pd.DataFrame) -> pd.DataFrame:
+    return data.set_index('timestamps').resample('1min').sum()
+
 def toEvents(data:pd.DataFrame) -> np.ndarray:
     n = len(data)
     events = np.empty(n, dtype=Event)
@@ -80,18 +83,21 @@ def compressDraws(data: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame({'start_time': start_time, 'end_time': end_time, 'draw': draw}).dropna()
 
 if __name__ == '__main__':
-    base_names = ['std-1br-dwh','std-2br-dwh','std-3br-dwh','std-4br-dwh','std-5br-dwh']
-    #base_names = ['std-3br-dwh']
+    # base_names = ['std-1br-dwh','std-2br-dwh','std-3br-dwh','std-4br-dwh','std-5br-dwh']
+    base_names = ['std-3br-dwh']
     
     for name in base_names:
         raw = loadData(f'data/{name}.csv')
         data = toTimeSeries(raw)
-        
+
         cnt = 1
         for idx, day in data.groupby(data.Time.dt.date):
                 print(name, idx)
                 events = toEvents(day)
                 stacked = stackEvents(events)
+                per_minute = perMinute(stacked)
+                per_minute.to_csv(f'outputs/{name}-{cnt}-min.csv',index=False)
+                print(stacked['draws'].sum(), per_minute.sum())
                 compressed = compressDraws(stacked)               
                 compressed.to_csv(f'outputs/{name}-{cnt}.csv',index=False)
                 cnt+=1
